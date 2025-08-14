@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>시설물 관리 시스템</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f4f4f9; }
+    .container { max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+    h1 { color: #333; text-align: center; }
+    .login-container { text-align: center; margin-bottom: 20px; }
+    .button { padding: 12px 20px; font-size: 1em; border: none; border-radius: 5px; cursor: pointer; color: white; margin: 5px; }
+    .button.user { background-color: #007bff; }
+    .button.admin { background-color: #28a745; }
+    .button.scan { background-color: #6c757d; display: block; width: 100%; margin-top: 20px; }
+    .data-item { margin-bottom: 15px; }
+    .data-item label { font-weight: bold; display: block; margin-bottom: 5px; color: #555; }
+    .data-item input, .data-item textarea { width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; font-size: 1em; }
+    .button-group { text-align: right; margin-top: 20px; }
+    .button.save { background-color: #28a745; color: white; }
+    #loading, #error { text-align: center; font-size: 1.2em; color: #555; margin-top: 20px; }
+    #error { color: #dc3545; }
+  </style>
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1 id="title">시설물 관리 시스템</h1>
+    <div id="main-screen">
+      <div id="login-section" class="login-container">
+        <button id="loginBtn_user" class="button user">일반 사용자 로그인</button>
+        <button id="loginBtn_admin" class="button admin">관리자 로그인</button>
+      </div>
+      <button id="scanBtn" class="button scan" style="display: none;">QR 코드 스캔</button>
+    </div>
+
+    <div id="scan-screen" style="display: none;">
+      <h2 style="text-align: center;">QR 코드 스캔</h2>
+      <div id="reader" style="width: 100%;"></div>
+      <button id="backBtn" class="button scan" style="margin-top: 10px;">뒤로가기</button>
+    </div>
+
+    <div id="data-screen" style="display: none;">
+      <h2 id="data-title"></h2>
+      <div id="data-display"></div>
+      <div id="loading" style="display: none;">데이터를 불러오는 중...</div>
+      <div id="error" style="display: none;"></div>
+      <div class="button-group">
+        <button id="backToMainBtn" class="button user">메인으로</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const apiBaseUrl = 'https://script.google.com/a/macros/vision.hoseo.edu/s/AKfycbzwNvw8Aih1CYUNcsGeMdO2Oo1qdtLO4a2vyuB5H9rzRxbcqeRsYWNVO7gJdD9qvC7W/exec'; 
+
+    let userRole = '';
+    let html5QrcodeScanner;
+
+    const mainScreen = document.getElementById('main-screen');
+    const scanScreen = document.getElementById('scan-screen');
+    const dataScreen = document.getElementById('data-screen');
+    const scanBtn = document.getElementById('scanBtn');
+    const backBtn = document.getElementById('backBtn');
+    const backToMainBtn = document.getElementById('backToMainBtn');
+
+    document.getElementById('loginBtn_user').addEventListener('click', () => {
+      userRole = 'user';
+      document.getElementById('login-section').style.display = 'none';
+      scanBtn.innerText = '일반 사용자 모드 QR 코드 스캔';
+      scanBtn.style.display = 'block';
+    });
+
+    document.getElementById('loginBtn_admin').addEventListener('click', () => {
+      userRole = 'admin';
+      document.getElementById('login-section').style.display = 'none';
+      scanBtn.innerText = '관리자 모드 QR 코드 스캔';
+      scanBtn.style.display = 'block';
+    });
+    
+    scanBtn.addEventListener('click', () => {
+      mainScreen.style.display = 'none';
+      scanScreen.style.display = 'block';
+      startScanner();
+    });
+
+    backBtn.addEventListener('click', () => {
+      stopScanner();
+      scanScreen.style.display = 'none';
+      mainScreen.style.display = 'block';
+    });
+
+    backToMainBtn.addEventListener('click', () => {
+      dataScreen.style.display = 'none';
+      document.getElementById('login-section').style.display = 'block';
+      scanBtn.style.display = 'none';
+      userRole = '';
+      document.getElementById('title').innerText = '시설물 관리 시스템';
+      document.getElementById('data-display').innerHTML = '';
+      document.getElementById('error').style.display = 'none';
+    });
+
+    function startScanner() {
+      html5QrcodeScanner = new Html5QrcodeScanner(
+        "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
+      );
+      html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+      if (decodedText) {
+        stopScanner();
+        scanScreen.style.display = 'none';
+        dataScreen.style.display = 'block';
+        processQRData(decodedText);
+      }
+    }
+
+    function onScanFailure(error) {
+      // 스캔 실패 시에는 아무것도 하지 않아도 괜찮습니다.
+    }
+
+    function stopScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.clear().catch(error => {
+          console.error("Failed to clear scanner: ", error);
+        });
+        html5QrcodeScanner = null;
+      }
+    }
+
+    function processQRData(qrUrl) {
+      const url = new URL(qrUrl);
+      const facilityId = url.searchParams.get('id');
+      
+      if (facilityId) {
+        fetchData(facilityId);
+      } else {
+        document.getElementById('data-title').innerText = '오류';
+        document.getElementById('error').innerText = 'QR 코드에 유효한 시설물 ID가 없습니다.';
+        document.getElementById('error').style.display = 'block';
+      }
+    }
+
+    function fetchData(facilityId) {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('error').style.display = 'none';
+      document.getElementById('data-title').innerText = `시설물 ID: ${facilityId}`;
+      
+      fetch(`${apiBaseUrl}?id=${facilityId}`)
+        .then(response => response.json())
+        .then(data => {
+          document.getElementById('loading').style.display = 'none';
+          if (data && data['시설물ID']) {
+            renderData(data, facilityId);
+          } else {
+            document.getElementById('error').innerText = '시설물 정보를 찾을 수 없습니다.';
+            document.getElementById('error').style.display = 'block';
+          }
+        })
+        .catch(error => {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('error').innerText = '데이터를 불러오는 데 실패했습니다.';
+          document.getElementById('error').style.display = 'block';
+          console.error('Error fetching data:', error);
+        });
+    }
+
+    function renderData(facilityData, facilityId) {
+      const dataDisplay = document.getElementById('data-display');
+      dataDisplay.innerHTML = '';
+      
+      for (const key in facilityData) {
+        if (facilityData.hasOwnProperty(key)) {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'data-item';
+
+          const label = document.createElement('label');
+          label.innerText = key;
+          itemDiv.appendChild(label);
+
+          if (userRole === 'admin' && key !== '시설물ID') {
+            const input = document.createElement(key.length > 20 ? 'textarea' : 'input');
+            input.id = `input_${key}`;
+            input.value = facilityData[key];
+            itemDiv.appendChild(input);
+          } else {
+            const span = document.createElement('span');
+            span.innerText = facilityData[key];
+            itemDiv.appendChild(span);
+          }
+          dataDisplay.appendChild(itemDiv);
+        }
+      }
+
+      if (userRole === 'admin') {
+        const buttonGroup = document.createElement('div');
+        buttonGroup.className = 'button-group';
+        const saveButton = document.createElement('button');
+        saveButton.className = 'button save';
+        saveButton.innerText = '변경 사항 저장';
+        saveButton.addEventListener('click', () => saveData(facilityId));
+        buttonGroup.appendChild(saveButton);
+        dataDisplay.appendChild(buttonGroup);
+      }
+    }
+
+    function saveData(facilityId) {
+      const updatedData = {};
+      const inputs = document.querySelectorAll('#data-display input, #data-display textarea');
+      inputs.forEach(input => {
+        const key = input.id.replace('input_', '');
+        updatedData[key] = input.value;
+      });
+
+      document.getElementById('loading').style.display = 'block';
+      fetch(apiBaseUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          id: facilityId,
+          data: JSON.stringify(updatedData)
+        })
+      })
+      .then(response => response.json())
+      .then(result => {
+        document.getElementById('loading').style.display = 'none';
+        if (result.status === 'success') {
+          alert('데이터가 성공적으로 저장되었습니다!');
+          fetchData(facilityId);
+        } else {
+          document.getElementById('error').innerText = '데이터 저장에 실패했습니다.';
+          document.getElementById('error').style.display = 'block';
+        }
+      })
+      .catch(error => {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('error').innerText = '데이터 저장에 실패했습니다.';
+        document.getElementById('error').style.display = 'block';
+        console.error('Error saving data:', error);
+      });
+    }
+  </script>
+</body>
+</html>
