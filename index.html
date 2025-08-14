@@ -26,6 +26,7 @@
 <body>
   <div class="container">
     <h1 id="title">시설물 관리 시스템</h1>
+    
     <div id="main-screen">
       <div id="login-section" class="login-container">
         <button id="loginBtn_user" class="button user">일반 사용자 로그인</button>
@@ -52,7 +53,7 @@
   </div>
 
   <script>
-    const apiBaseUrl = 'https://script.google.com/macros/s/AKfycbwz4uRCVxrQ9vSji_0VaXIGndhHx0i0lsNxw0y3NacMAI7KuOEU57RuQ14NwYPcgPih/exec'; 
+    const apiBaseUrl = 'YOUR_APPS_SCRIPT_URL_HERE'; // 여기에 Apps Script URL을 붙여넣으세요!
 
     let userRole = '';
     let html5QrcodeScanner;
@@ -92,7 +93,7 @@
 
     backToMainBtn.addEventListener('click', () => {
       dataScreen.style.display = 'none';
-      mainScreen.style.display = 'block';
+      mainScreen.style.display = 'block'; // 메인으로 돌아가기 기능 수정
       document.getElementById('login-section').style.display = 'block';
       scanBtn.style.display = 'none';
       userRole = '';
@@ -102,40 +103,38 @@
     });
 
     function startScanner() {
-      html5QrcodeScanner = new Html5QrcodeScanner(
-        "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
-      );
+      if (!html5QrcodeScanner) {
+        html5QrcodeScanner = new Html5QrcodeScanner(
+          "reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false
+        );
+      }
       html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
 
-function onScanSuccess(decodedText, decodedResult) {
-  if (decodedText) {
-    stopScanner();
-    scanScreen.style.display = 'none';
-    dataScreen.style.display = 'block';
-
-    try {
-      // 디코딩된 URL에서 'id' 파라미터 추출
-      const url = new URL(decodedText);
-      const facilityId = url.searchParams.get('id');
-      
-      if (facilityId) {
-        // 'id'가 존재하면 fetchData 함수 호출
-        fetchData(facilityId);
-      } else {
-        // 'id'가 없으면 오류 메시지 표시
-        document.getElementById('data-title').innerText = '오류';
-        document.getElementById('error').innerText = 'QR 코드에 유효한 시설물 ID가 없습니다.';
-        document.getElementById('error').style.display = 'block';
+    function onScanSuccess(decodedText, decodedResult) {
+      if (decodedText) {
+        stopScanner();
+        scanScreen.style.display = 'none';
+        dataScreen.style.display = 'block';
+        
+        try {
+          const url = new URL(decodedText);
+          const facilityId = url.searchParams.get('id');
+          
+          if (facilityId) {
+            fetchData(facilityId);
+          } else {
+            document.getElementById('data-title').innerText = '오류';
+            document.getElementById('error').innerText = 'QR 코드에 유효한 시설물 ID가 없습니다.';
+            document.getElementById('error').style.display = 'block';
+          }
+        } catch (e) {
+          document.getElementById('data-title').innerText = '오류';
+          document.getElementById('error').innerText = '스캔한 데이터가 유효한 URL 형식이 아닙니다.';
+          document.getElementById('error').style.display = 'block';
+        }
       }
-    } catch (e) {
-      // URL 형식이 아닐 경우 오류 메시지 표시
-      document.getElementById('data-title').innerText = '오류';
-      document.getElementById('error').innerText = '스캔한 데이터가 유효한 URL 형식이 아닙니다.';
-      document.getElementById('error').style.display = 'block';
     }
-  }
-}
 
     function onScanFailure(error) {
       // 스캔 실패 시에는 아무것도 하지 않아도 괜찮습니다.
@@ -147,19 +146,6 @@ function onScanSuccess(decodedText, decodedResult) {
           console.error("Failed to clear scanner: ", error);
         });
         html5QrcodeScanner = null;
-      }
-    }
-
-    function processQRData(qrUrl) {
-      const url = new URL(qrUrl);
-      const facilityId = url.searchParams.get('id');
-      
-      if (facilityId) {
-        fetchData(facilityId);
-      } else {
-        document.getElementById('data-title').innerText = '오류';
-        document.getElementById('error').innerText = 'QR 코드에 유효한 시설물 ID가 없습니다.';
-        document.getElementById('error').style.display = 'block';
       }
     }
 
@@ -263,6 +249,3 @@ function onScanSuccess(decodedText, decodedResult) {
   </script>
 </body>
 </html>
-
-
-
