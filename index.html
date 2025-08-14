@@ -93,7 +93,7 @@
 
     backToMainBtn.addEventListener('click', () => {
       dataScreen.style.display = 'none';
-      mainScreen.style.display = 'block'; // 메인으로 돌아가기 기능 수정
+      mainScreen.style.display = 'block';
       document.getElementById('login-section').style.display = 'block';
       scanBtn.style.display = 'none';
       userRole = '';
@@ -132,6 +132,7 @@
           document.getElementById('data-title').innerText = '오류';
           document.getElementById('error').innerText = '스캔한 데이터가 유효한 URL 형식이 아닙니다.';
           document.getElementById('error').style.display = 'block';
+          console.error("Error parsing QR code data:", e);
         }
       }
     }
@@ -154,20 +155,22 @@
       document.getElementById('error').style.display = 'none';
       document.getElementById('data-title').innerText = `시설물 ID: ${facilityId}`;
       
-      fetch(`${apiBaseUrl}?id=${facilityId}`)
+      const fullApiUrl = `${apiBaseUrl}?id=${facilityId}`;
+
+      fetch(fullApiUrl)
         .then(response => response.json())
         .then(data => {
           document.getElementById('loading').style.display = 'none';
           if (data && data['시설물ID']) {
             renderData(data, facilityId);
           } else {
-            document.getElementById('error').innerText = '시설물 정보를 찾을 수 없습니다.';
+            document.getElementById('error').innerText = '시설물 정보를 찾을 수 없거나 데이터 형식이 올바르지 않습니다.';
             document.getElementById('error').style.display = 'block';
           }
         })
         .catch(error => {
           document.getElementById('loading').style.display = 'none';
-          document.getElementById('error').innerText = '데이터를 불러오는 데 실패했습니다.';
+          document.getElementById('error').innerText = '데이터를 불러오는 데 실패했습니다. Apps Script URL을 확인해주세요.';
           document.getElementById('error').style.display = 'block';
           console.error('Error fetching data:', error);
         });
@@ -249,5 +252,3 @@
   </script>
 </body>
 </html>
-
-
