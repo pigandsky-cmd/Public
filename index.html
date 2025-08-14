@@ -108,14 +108,34 @@
       html5QrcodeScanner.render(onScanSuccess, onScanFailure);
     }
 
-    function onScanSuccess(decodedText, decodedResult) {
-      if (decodedText) {
-        stopScanner();
-        scanScreen.style.display = 'none';
-        dataScreen.style.display = 'block';
-        processQRData(decodedText);
+function onScanSuccess(decodedText, decodedResult) {
+  if (decodedText) {
+    stopScanner();
+    scanScreen.style.display = 'none';
+    dataScreen.style.display = 'block';
+
+    try {
+      // 디코딩된 URL에서 'id' 파라미터 추출
+      const url = new URL(decodedText);
+      const facilityId = url.searchParams.get('id');
+      
+      if (facilityId) {
+        // 'id'가 존재하면 fetchData 함수 호출
+        fetchData(facilityId);
+      } else {
+        // 'id'가 없으면 오류 메시지 표시
+        document.getElementById('data-title').innerText = '오류';
+        document.getElementById('error').innerText = 'QR 코드에 유효한 시설물 ID가 없습니다.';
+        document.getElementById('error').style.display = 'block';
       }
+    } catch (e) {
+      // URL 형식이 아닐 경우 오류 메시지 표시
+      document.getElementById('data-title').innerText = '오류';
+      document.getElementById('error').innerText = '스캔한 데이터가 유효한 URL 형식이 아닙니다.';
+      document.getElementById('error').style.display = 'block';
     }
+  }
+}
 
     function onScanFailure(error) {
       // 스캔 실패 시에는 아무것도 하지 않아도 괜찮습니다.
@@ -243,5 +263,6 @@
   </script>
 </body>
 </html>
+
 
 
