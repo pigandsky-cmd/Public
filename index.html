@@ -52,7 +52,7 @@
   </div>
 
   <script>
-    const apiBaseUrl = 'https://script.google.com/a/macros/vision.hoseo.edu/s/AKfycbzwNvw8Aih1CYUNcsGeMdO2Oo1qdtLO4a2vyuB5H9rzRxbcqeRsYWNVO7gJdD9qvC7W/exec'; 
+    const apiBaseUrl = 'https://script.google.com/macros/s/AKfycbySrM406NyBAqji4ZzsbyNHSMTWi7CKkrS_uvnLdoGFilFlJlpq9vJUkqtTdCitdVkH/exec'; 
 
     let userRole = '';
     let html5QrcodeScanner;
@@ -92,6 +92,7 @@
 
     backToMainBtn.addEventListener('click', () => {
       dataScreen.style.display = 'none';
+      mainScreen.style.display = 'block';
       document.getElementById('login-section').style.display = 'block';
       scanBtn.style.display = 'none';
       userRole = '';
